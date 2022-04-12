@@ -1,0 +1,489 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     17335,        481]
+NotebookOptionsPosition[     15308,        429]
+NotebookOutlinePosition[     15652,        444]
+CellTagsIndexPosition[     15609,        441]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Fluorescence ", "Subsubsection",
+ CellChangeTimes->{{3.84867950805888*^9, 3.848679517167575*^9}, 
+   3.8505576340183706`*^9, {3.8561055534844007`*^9, 3.8561055579215746`*^9}, {
+   3.8587633122214055`*^9, 
+   3.8587633154396024`*^9}},ExpressionUUID->"0247d7b0-77a0-45f6-a9b3-\
+12775184dcf6"],
+
+Cell["\<\
+This Mathematica worksheet generates CIE color coordinates XYZ and predicted \
+\[OpenCurlyDoubleQuote]color swatches\[CloseCurlyDoubleQuote] from \
+Franck-Condon-Herzberg-Teller emission spectra
+
+It implements the methods of \[OpenCurlyDoubleQuote]Benchmarking \
+Time-Dependent Density Functional Theory Predictions of Emission Spectra and \
+CIE Color: A Rainbow of Error\[CloseCurlyDoubleQuote], Benjamin G. Janesko
+
+The inputs are text files where column 1 is wavelength in nm, column 2 is \
+wavenumber in cm^(-1), and column 3 is predicted emitted intensity. Examples \
+of generating this text file from Gaussian 16 calculations are included \
+separately.\
+\>", "Text",
+ CellChangeTimes->{{3.856106346972118*^9, 3.8561063700351863`*^9}, {
+  3.8587633177533693`*^9, 3.8587633820632615`*^9}, {3.8587634595216227`*^9, 
+  3.8587635267042274`*^9}, {3.8587635810979834`*^9, 3.8587636084691668`*^9}, {
+  3.8587642761819305`*^9, 3.858764276509999*^9}, {3.8587648265143166`*^9, 
+  3.858764843674861*^9}, {3.8587649521984262`*^9, 
+  3.858765047462765*^9}},ExpressionUUID->"bb2e4680-4fe5-4990-be79-\
+bd91a2fc2d59"],
+
+Cell["\<\
+Here are the work routines.
+Analytic interpolations of CIE color matching functions, from Wyman et al J \
+Comput Graph Tech 2013 , and a function for numerically computing the \
+overlaps \
+\>", "Text",
+ CellChangeTimes->{{3.858690169872306*^9, 3.858690195182602*^9}, {
+  3.858763609453318*^9, 3.8587636150632067`*^9}, {3.8587636606100364`*^9, 
+  3.8587636836640525`*^9}},ExpressionUUID->"332af920-2dd6-4c38-a273-\
+ac794cdc5aa2"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"red", "[", "lambda_", "]"}], ":=", 
+   RowBox[{
+    RowBox[{"1.065", "*", 
+     RowBox[{"Exp", "[", 
+      RowBox[{
+       RowBox[{"-", 
+        RowBox[{"(", 
+         RowBox[{"1", "/", "2"}], ")"}]}], "*", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"lambda", "-", "595.8"}], ")"}], "/", "33.33"}], ")"}], 
+        "^", "2"}]}], "]"}]}], "+", 
+    RowBox[{"0.366", "*", 
+     RowBox[{"Exp", "[", 
+      RowBox[{
+       RowBox[{
+        RowBox[{"-", "1"}], "/", "2"}], "*", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"lambda", "-", "446.8"}], ")"}], "/", "19.44"}], ")"}], 
+        "^", "2"}]}], "]"}]}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"green", "[", "lambda_", "]"}], ":=", 
+   RowBox[{"1.014", "*", 
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", 
+       RowBox[{"(", 
+        RowBox[{"1", "/", "2"}], ")"}]}], "*", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"Log", "[", "lambda", "]"}], "-", 
+           RowBox[{"Log", "[", "556.3", "]"}]}], ")"}], "/", "0.075"}], ")"}],
+        "^", "2"}]}], "]"}]}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"blue", "[", "lambda_", "]"}], ":=", 
+   RowBox[{"1.839", "*", 
+    RowBox[{"Exp", "[", 
+     RowBox[{
+      RowBox[{"-", 
+       RowBox[{"(", 
+        RowBox[{"1", "/", "2"}], ")"}]}], "*", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{
+           RowBox[{"Log", "[", "lambda", "]"}], "-", 
+           RowBox[{"Log", "[", "449.8", "]"}]}], ")"}], "/", "0.051"}], ")"}],
+        "^", "2"}]}], "]"}]}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.8586901977482576`*^9, 3.858690198664565*^9}, {
+  3.8586902378782454`*^9, 
+  3.8586903922876887`*^9}},ExpressionUUID->"b45e0aa2-cbdf-4c29-bea7-\
+74c617295d63"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"GetCIE0", "[", "f_", "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"fi", ",", "fc"}], "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{
+      RowBox[{"fi", "=", 
+       RowBox[{"Interpolation", "[", 
+        RowBox[{"Transpose", "[", 
+         RowBox[{"{", 
+          RowBox[{
+           RowBox[{"10000000", "/", 
+            RowBox[{"(", 
+             RowBox[{"f", "[", 
+              RowBox[{"[", 
+               RowBox[{"All", ",", "2"}], "]"}], "]"}], ")"}]}], ",", 
+           RowBox[{"f", "[", 
+            RowBox[{"[", 
+             RowBox[{"All", ",", "3"}], "]"}], "]"}]}], "}"}], "]"}], "]"}]}],
+       ";", "\[IndentingNewLine]", " ", 
+      RowBox[{"fc", "=", 
+       RowBox[{"NIntegrate", "[", 
+        RowBox[{
+         RowBox[{
+          RowBox[{"{", 
+           RowBox[{
+            RowBox[{"red", "[", "lambda", "]"}], ",", 
+            RowBox[{"green", "[", "lambda", "]"}], ",", 
+            RowBox[{"blue", "[", "lambda", "]"}]}], "}"}], "*", 
+          RowBox[{"fi", "[", "lambda", "]"}]}], ",", 
+         RowBox[{"{", 
+          RowBox[{"lambda", ",", "400", ",", "700"}], "}"}]}], "]"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"Return", "[", "fc", "]"}], ";"}]}], "\[IndentingNewLine]", 
+    "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"GetCIE", "[", 
+    RowBox[{"f_", ",", "nv_"}], "]"}], ":=", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{"fi", ",", "fc"}], "}"}], ",", "\[IndentingNewLine]", " ", 
+     RowBox[{
+      RowBox[{"fc", "=", 
+       RowBox[{
+        RowBox[{"GetCIE0", "[", "f", "]"}], "/", "nv"}]}], ";", 
+      "\[IndentingNewLine]", 
+      RowBox[{"Return", "[", 
+       RowBox[{"{", 
+        RowBox[{
+         RowBox[{"XYZColor", "[", "fc", "]"}], ",", "fc"}], "}"}], "]"}], 
+      ";"}]}], "\[IndentingNewLine]", "]"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.858693052909234*^9, 3.8586931866357546`*^9}, {
+  3.8586932260943913`*^9, 3.8586932277035685`*^9}, {3.8586934819279766`*^9, 
+  3.858693489819455*^9}, {3.8587637460978436`*^9, 3.8587637792942634`*^9}, {
+  3.8587642381167564`*^9, 
+  3.8587642399681826`*^9}},ExpressionUUID->"727c3e22-bab4-4dd0-9a40-\
+cd0cb456b870"],
+
+Cell["\<\
+Import the predicted emission spectra, extracted as a text file from a \
+Gaussian 16 log file using the included perl script. \
+\>", "Text",
+ CellChangeTimes->{{3.8587635829339623`*^9, 3.8587635860582943`*^9}, {
+   3.8587639223840885`*^9, 3.85876392358665*^9}, {3.8587639828309755`*^9, 
+   3.858763990240535*^9}, 3.858764064500188*^9, 
+   3.8587642860083666`*^9},ExpressionUUID->"7368fd29-2cfc-42e2-b136-\
+7eafc0dd96e4"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"SetDirectory", "[", 
+   RowBox[{"NotebookDirectory", "[", "]"}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"B3LYPf", "=", 
+   RowBox[{"Import", "[", 
+    RowBox[{"\"\<B3LYP-fl1.txt\>\"", ",", "\"\<Table\>\""}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"M062Xf", "=", 
+   RowBox[{"Import", "[", 
+    RowBox[{"\"\<M062X-fl1.txt\>\"", ",", "\"\<Table\>\""}], "]"}]}], 
+  ";"}]}], "Input",
+ CellChangeTimes->{{3.858764392873163*^9, 
+  3.858764436108754*^9}},ExpressionUUID->"b3ecc2d0-d71f-4737-adea-\
+c8c5fe93c694"],
+
+Cell["\<\
+Get the absolute value of the B3LYP CIE coordinates, for normalization of \
+different spectra , and plot the spectrum for completeness \
+\>", "Text",
+ CellChangeTimes->{{3.8587637959149427`*^9, 3.858763814065285*^9}, {
+  3.858763940264718*^9, 3.8587639566264305`*^9}, {3.8587644850644464`*^9, 
+  3.858764494140793*^9}},ExpressionUUID->"aeb57902-4017-4795-b041-\
+5394114b33fe"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"B3LYPi", "=", 
+   RowBox[{"Interpolation", "[", 
+    RowBox[{"Transpose", "[", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"10000000", "/", 
+        RowBox[{"(", 
+         RowBox[{"B3LYPf", "[", 
+          RowBox[{"[", 
+           RowBox[{"All", ",", "2"}], "]"}], "]"}], ")"}]}], ",", 
+       RowBox[{"B3LYPf", "[", 
+        RowBox[{"[", 
+         RowBox[{"All", ",", "3"}], "]"}], "]"}]}], "}"}], "]"}], "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{" ", 
+  RowBox[{
+   RowBox[{"xyz0", "=", 
+    RowBox[{"NIntegrate", "[", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{
+         RowBox[{"red", "[", "lambda", "]"}], ",", 
+         RowBox[{"green", "[", "lambda", "]"}], ",", 
+         RowBox[{"blue", "[", "lambda", "]"}]}], "}"}], "*", 
+       RowBox[{"B3LYPi", "[", "lambda", "]"}]}], ",", 
+      RowBox[{"{", 
+       RowBox[{"lambda", ",", "400", ",", "700"}], "}"}]}], "]"}]}], 
+   ";"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"NN", " ", "=", 
+   RowBox[{"Tr", "[", "xyz0", "]"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.8587637925875697`*^9, 3.8587637945873594`*^9}, {
+  3.858764006870098*^9, 3.858764027678381*^9}, {3.8587645021981554`*^9, 
+  3.8587645023471165`*^9}},ExpressionUUID->"5b5629b0-7f04-4919-868e-\
+eff3b1a27722"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "NIntegrate","ncvb",
+   "\"NIntegrate failed to converge to prescribed accuracy after \
+\\!\\(\\*RowBox[{\\\"9\\\"}]\\) recursive bisections in \
+\\!\\(\\*RowBox[{\\\"lambda\\\"}]\\) near \\!\\(\\*RowBox[{\\\"{\\\", \
+\\\"lambda\\\", \\\"}\\\"}]\\) = \\!\\(\\*RowBox[{\\\"{\\\", \
+\\\"552.3390875078403`\\\", \\\"}\\\"}]\\). NIntegrate obtained \
+\\!\\(\\*RowBox[{\\\"1.7643955303303431`\\\"}]\\) and \
+\\!\\(\\*RowBox[{\\\"3.195547094299783`*^-6\\\"}]\\) for the integral and \
+error estimates.\"",2,52,14,20159943389695756628,"Local"},
+  "MessageTemplate"]], "Message", "MSG",
+ CellChangeTimes->{
+  3.8587640293681593`*^9, {3.8587642189551735`*^9, 3.8587642427907047`*^9}, 
+   3.8587644437793164`*^9},ExpressionUUID->"29fa021d-2be7-48e3-880f-\
+0b2b07805c24"]
+}, Open  ]],
+
+Cell[BoxData[
+ RowBox[{"Plot", "[", 
+  RowBox[{
+   RowBox[{"B3LYPi", "[", "lambda", "]"}], ",", 
+   RowBox[{"{", 
+    RowBox[{"lambda", ",", "400", ",", "760"}], "}"}], ",", 
+   RowBox[{"PlotStyle", "\[Rule]", 
+    RowBox[{"{", "Green", "}"}]}], ",", 
+   RowBox[{"PlotRange", "\[Rule]", "Full"}], ",", 
+   RowBox[{"Filling", "\[Rule]", 
+    RowBox[{"{", 
+     RowBox[{
+      RowBox[{"1", "->", "Axis"}], ",", 
+      RowBox[{"2", "\[Rule]", "Axis"}], ",", 
+      RowBox[{"3", "\[Rule]", "Axis"}]}], "}"}]}], ",", 
+   RowBox[{"Frame", "\[Rule]", "True"}], ",", 
+   RowBox[{"LabelStyle", "\[Rule]", 
+    RowBox[{"{", 
+     RowBox[{"FontSize", "\[Rule]", "13"}], "}"}]}], ",", 
+   RowBox[{"FrameLabel", "\[Rule]", 
+    RowBox[{"{", 
+     RowBox[{"\"\<Wavelength (nm)\>\"", ",", "\"\<Intensity (arb.)\>\""}], 
+     "}"}]}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.858764496561926*^9, 
+  3.858764561492946*^9}},ExpressionUUID->"909abbc0-f1d3-436f-add1-\
+9cf5ef4c026f"],
+
+Cell["\<\
+Compute the normalized XYZ color coordinates and predicted hue of each \
+\>", "Text",
+ CellChangeTimes->{{3.8587640529721007`*^9, 
+  3.8587640806916833`*^9}},ExpressionUUID->"ae32f96b-1052-490c-b404-\
+3a1834e2b4c3"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"Bhue", ",", "Bxyz"}], "}"}], " ", "=", " ", 
+   RowBox[{"GetCIE", "[", 
+    RowBox[{"B3LYPf", ",", "NN"}], "]"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{"Mhue", ",", "Mxyz"}], "}"}], " ", "=", "  ", 
+   RowBox[{"GetCIE", "[", 
+    RowBox[{"M062Xf", ",", "NN"}], "]"}]}], ";"}]}], "Input",
+ CellChangeTimes->{{3.8406294549519014`*^9, 3.8406294579426975`*^9}, {
+   3.840629522114648*^9, 3.8406295316960793`*^9}, 3.8587635369306154`*^9, {
+   3.85876369812239*^9, 3.858763710305832*^9}, {3.8587640427923613`*^9, 
+   3.8587640517062397`*^9}, {3.85876408331805*^9, 3.858764112415885*^9}, 
+   3.8587642216280394`*^9, 
+   3.858764447643508*^9},ExpressionUUID->"918d5dc9-0f74-44a2-9ed7-\
+1277e9ff3675"],
+
+Cell[BoxData[
+ TemplateBox[{
+  "NIntegrate","ncvb",
+   "\"NIntegrate failed to converge to prescribed accuracy after \
+\\!\\(\\*RowBox[{\\\"9\\\"}]\\) recursive bisections in \
+\\!\\(\\*RowBox[{\\\"lambda\\\"}]\\) near \\!\\(\\*RowBox[{\\\"{\\\", \
+\\\"lambda\\\", \\\"}\\\"}]\\) = \\!\\(\\*RowBox[{\\\"{\\\", \
+\\\"552.3390875078403`\\\", \\\"}\\\"}]\\). NIntegrate obtained \
+\\!\\(\\*RowBox[{\\\"1.7643955303303431`\\\"}]\\) and \
+\\!\\(\\*RowBox[{\\\"3.195547094299783`*^-6\\\"}]\\) for the integral and \
+error estimates.\"",2,56,16,20159943389695756628,"Local"},
+  "MessageTemplate"]], "Message", "MSG",
+ CellChangeTimes->{{3.858764101286515*^9, 3.8587641128844185`*^9}, {
+  3.8587642206266336`*^9, 3.858764244853195*^9}, {3.8587644454039464`*^9, 
+  3.8587644480600815`*^9}},ExpressionUUID->"bf663ce4-8bd3-4b09-8e61-\
+daebb4c7bb81"]
+}, Open  ]],
+
+Cell["Display the results as color swatches ", "Text",
+ CellChangeTimes->{{3.8587641371193094`*^9, 3.8587641399976206`*^9}, {
+  3.858764452779786*^9, 
+  3.858764455216837*^9}},ExpressionUUID->"52e18dd1-dbf0-4f31-967e-\
+8397f78b34f4"],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"hues", "=", 
+   RowBox[{"{", 
+    RowBox[{"Bhue", ",", "Mhue"}], "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"names", "=", 
+   RowBox[{"{", 
+    RowBox[{"\"\<B3LYP\>\"", ",", "\"\<M06-2X\>\""}], "}"}]}], 
+  ";"}]}], "Input",
+ CellChangeTimes->{{3.858764144076679*^9, 
+  3.8587641604515963`*^9}},ExpressionUUID->"5d8c0c19-0b46-4ab0-ba0c-\
+2c99b1e2ae1f"],
+
+Cell[BoxData[
+ RowBox[{" ", 
+  RowBox[{"Graphics", "[", 
+   RowBox[{"Table", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{
+         RowBox[{"hues", "[", 
+          RowBox[{"[", "i", "]"}], "]"}], ",", 
+         RowBox[{"Rectangle", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{"0", ",", 
+             RowBox[{
+              RowBox[{"-", ".12"}], "*", "i"}]}], "}"}], ",", 
+           RowBox[{"{", 
+            RowBox[{".28", ",", 
+             RowBox[{
+              RowBox[{
+               RowBox[{"-", ".12"}], "*", "i"}], "+", ".10"}]}], "}"}]}], 
+          "]"}]}], "}"}], ",", 
+       RowBox[{"Text", "[", 
+        RowBox[{
+         RowBox[{"Style", "[", 
+          RowBox[{
+           RowBox[{"names", "[", 
+            RowBox[{"[", "i", "]"}], "]"}], ",", "Black", ",", 
+           RowBox[{"TextAlignment", "\[Rule]", "Left"}], ",", 
+           RowBox[{"FontSize", "\[Rule]", "15"}]}], "]"}], ",", 
+         RowBox[{"{", 
+          RowBox[{"0.4", ",", 
+           RowBox[{
+            RowBox[{
+             RowBox[{"-", ".12"}], "*", "i"}], "+", ".02"}]}], "}"}]}], 
+        "]"}]}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"i", ",", "1", ",", "2"}], "}"}]}], "]"}], "]"}]}]], "Input",
+ CellChangeTimes->{{3.8587641705533977`*^9, 3.858764176778965*^9}, {
+  3.8587642480093203`*^9, 3.8587642489093833`*^9}, {3.858764457903481*^9, 
+  3.858764469577056*^9}},ExpressionUUID->"d382ad38-b8a5-4db6-89b6-\
+8053b6046f76"]
+}, Open  ]]
+},
+WindowSize->{1920, 997},
+WindowMargins->{{-8, Automatic}, {Automatic, -8}},
+FrontEndVersion->"11.1 for Microsoft Windows (64-bit) (April 18, 2017)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 296, 5, 39, "Subsubsection", "ExpressionUUID" -> \
+"0247d7b0-77a0-45f6-a9b3-12775184dcf6"],
+Cell[879, 29, 1116, 20, 106, "Text", "ExpressionUUID" -> \
+"bb2e4680-4fe5-4990-be79-bd91a2fc2d59"],
+Cell[1998, 51, 438, 9, 49, "Text", "ExpressionUUID" -> \
+"332af920-2dd6-4c38-a273-ac794cdc5aa2"],
+Cell[2439, 62, 2001, 65, 69, "Input", "ExpressionUUID" -> \
+"b45e0aa2-cbdf-4c29-bea7-74c617295d63"],
+Cell[4443, 129, 2277, 61, 183, "Input", "ExpressionUUID" -> \
+"727c3e22-bab4-4dd0-9a40-cd0cb456b870"],
+Cell[6723, 192, 430, 8, 30, "Text", "ExpressionUUID" -> \
+"7368fd29-2cfc-42e2-b136-7eafc0dd96e4"],
+Cell[7156, 202, 588, 17, 69, "Input", "ExpressionUUID" -> \
+"b3ecc2d0-d71f-4737-adea-c8c5fe93c694"],
+Cell[7747, 221, 386, 7, 30, "Text", "ExpressionUUID" -> \
+"aeb57902-4017-4795-b041-5394114b33fe"],
+Cell[CellGroupData[{
+Cell[8158, 232, 1312, 37, 69, "Input", "ExpressionUUID" -> \
+"5b5629b0-7f04-4919-868e-eff3b1a27722"],
+Cell[9473, 271, 791, 15, 23, "Message", "ExpressionUUID" -> \
+"29fa021d-2be7-48e3-880f-0b2b07805c24"]
+}, Open  ]],
+Cell[10279, 289, 963, 25, 30, "Input", "ExpressionUUID" -> \
+"909abbc0-f1d3-436f-add1-9cf5ef4c026f"],
+Cell[11245, 316, 225, 5, 30, "Text", "ExpressionUUID" -> \
+"ae32f96b-1052-490c-b404-3a1834e2b4c3"],
+Cell[CellGroupData[{
+Cell[11495, 325, 803, 19, 50, "Input", "ExpressionUUID" -> \
+"918d5dc9-0f74-44a2-9ed7-1277e9ff3675"],
+Cell[12301, 346, 838, 15, 23, "Message", "ExpressionUUID" -> \
+"bf663ce4-8bd3-4b09-8e61-daebb4c7bb81"]
+}, Open  ]],
+Cell[13154, 364, 233, 4, 30, "Text", "ExpressionUUID" -> \
+"52e18dd1-dbf0-4f31-967e-8397f78b34f4"],
+Cell[13390, 370, 404, 12, 50, "Input", "ExpressionUUID" -> \
+"5d8c0c19-0b46-4ab0-ba0c-2c99b1e2ae1f"],
+Cell[13797, 384, 1495, 42, 30, "Input", "ExpressionUUID" -> \
+"d382ad38-b8a5-4db6-89b6-8053b6046f76"]
+}, Open  ]]
+}
+]
+*)
+
