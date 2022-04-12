@@ -1,0 +1,13 @@
+%mem=4GB
+%nprocshared=6
+%chk=B3LYP-fl1.chk
+#P geom=allcheck guess=read 
+  chkbasis  freq(fcht,readfc,readfcht)
+ B3LYP
+
+transition=emission
+initial=(source=calc) final=(source=chk) 
+print=(spectra=final,matrix=jk,assignthresh=0.001,color=srgb) spectrum=(upper=+25000,lower=-25000)
+
+B3LYP-gs-copy.chk
+

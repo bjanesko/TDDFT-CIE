@@ -1,0 +1,28 @@
+#!/usr/bin/perl
+use strict;
+foreach my $f(<*abs*log>,<*fl*log>){
+	my $c=`grep -c "Normal term" $f`;
+	if($c>0){
+		open(F, "<$f");
+		my $g=$f;$g=~s/\.log/.txt/;
+		open(G, ">$g");
+		print "writing $g\n";
+		my $go=0;
+		foreach my $line(<F>){
+			if($line=~m/ -----/ and $go eq 2){$go=0;}
+			if($go eq 2){
+				$line =~s/D/e/g;
+				my @vals = split(/ +/,$line);
+				if($vals[1]>0){
+					print G sprintf("%12.7f  ",10000000/$vals[1]);
+					print G "$line";
+				}
+			}
+			if($go eq 1){$go=2;}
+			if($line =~m/Emitted intens/){$go=1;print "Found"}
+			if($line =~m/Molar absorption coeff/){$go=1;print "Found"}
+		}
+		close(F);
+		close(G);
+	}
+}

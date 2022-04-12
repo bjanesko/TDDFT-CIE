@@ -1,0 +1,12 @@
+Example scripts for computing emission spectrum and CIE color 
+This example is B3LYP/6-31+G(d)  calculations on perylene
+diimide
+This example uses Gaussian 16 
+
+Step 1: Run each *-gs.gjf ground state and *-es1.gjf first excited state geometry optimization 
+
+Step 2: Copy checkpoint files, e.g. B3LYP-gs.chk to B3LYP-gs-copy.chk and B3LYP-es1.chk B3LYP-fl1.chk 
+
+Step 3: Run each *-fl1.gjf to compute the Franck-Condon-Herzberg-Teller fluorescence spectrum 
+
+Step 4: Run doabs.prl to extract the predicted fluorescence spectrum into *-fl1.txt 
